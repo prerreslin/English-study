@@ -1,4 +1,4 @@
-/** C1 vocabulary — 67 words, split into a 7-day campaign */
+/** C1 vocabulary — 67 words, split into a 4-day campaign */
 window.VOCAB = [
   { id: 1, word: "abundant", meaning: "present in large quantities" },
   { id: 2, word: "accumulate", meaning: "to gradually collect" },
@@ -69,25 +69,19 @@ window.VOCAB = [
   { id: 67, word: "curriculum", meaning: "the courses given by a school or program" },
 ];
 
-/** Day sizes: 10,10,10,10,10,10,7 */
-window.DAY_SIZES = [10, 10, 10, 10, 10, 10, 7];
+/** Day sizes: day 1 kept (10), remaining 57 split into 3 denser days */
+window.DAY_SIZES = [10, 19, 19, 19];
 
 window.DAY_TITLES = [
   "The Opening Hand",
-  "Fog of Ambition",
-  "Hard Edges",
-  "Gift & Grit",
-  "Noise & Order",
-  "Force & Form",
+  "Ambition & Edges",
+  "Gift, Noise & Force",
   "The Final Core",
 ];
 
 window.DAY_BLURBS = [
   "Десять слов про количество, точность и соседство.",
-  "Выбор, неясность и большие цели.",
-  "Труд, капризы и то, что мы приписываем.",
-  "Польза, упрёки и гордость.",
-  "Грубость, шум и ясность.",
-  "Сила, осознание и столкновения.",
-  "Сообщество, конфликт и суть — финал недели.",
+  "Выбор, цели, труд и то, что мы приписываем — плотная пачка.",
+  "Польза, шум, ясность, сила и столкновения.",
+  "Сообщество, конфликт и суть — финал кампании.",
 ];
