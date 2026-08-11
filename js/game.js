@@ -1,5 +1,7 @@
 (() => {
   const STORAGE_KEY = "lexraid-c1-v1";
+  const TOTAL_DAYS = DAY_SIZES.length;
+  const LAST_DAY = TOTAL_DAYS - 1;
 
   const $ = (sel, root = document) => root.querySelector(sel);
   const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
@@ -105,7 +107,7 @@
     updateTopStats();
     const root = $("#days");
     root.innerHTML = "";
-    for (let i = 0; i < 7; i++) {
+    for (let i = 0; i < TOTAL_DAYS; i++) {
       const unlocked = i <= state.unlockedDay;
       const cleared = !!state.cleared[i];
       const avg = dayMasteryAvg(i);
@@ -371,11 +373,11 @@
 
     if (passedBoss) {
       state.cleared[currentDay] = true;
-      if (currentDay === state.unlockedDay && currentDay < 6) {
+      if (currentDay === state.unlockedDay && currentDay < LAST_DAY) {
         state.unlockedDay = currentDay + 1;
         toast(`День ${currentDay + 2} открыт!`);
-      } else if (currentDay === 6) {
-        toast("Неделя пройдена. Ты легенда лексикона.");
+      } else if (currentDay === LAST_DAY) {
+        toast("Кампания пройдена. Ты легенда лексикона.");
       }
       state.xp += 50;
       save();
@@ -402,7 +404,7 @@
         <div class="result-actions">
           <button class="btn btn-primary" id="again" type="button">Ещё раз</button>
           <button class="btn btn-secondary" id="to-lobby" type="button">К режимам дня</button>
-          <button class="btn btn-ghost" id="to-hub" type="button">Карта недели</button>
+          <button class="btn btn-ghost" id="to-hub" type="button">Карта кампании</button>
         </div>
       </div>`;
 
@@ -564,7 +566,7 @@
 
   function dayOfWord(id) {
     let start = 0;
-    for (let i = 0; i < 7; i++) {
+    for (let i = 0; i < TOTAL_DAYS; i++) {
       if (id > start && id <= start + DAY_SIZES[i]) return i + 1;
       start += DAY_SIZES[i];
     }
