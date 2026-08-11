@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Lex Raid — 67 words / 7 days</title>
+    <link rel="stylesheet" href="css/game.css" />
+  </head>
+  <body>
+    <div class="app">
+      <header class="topbar">
+        <div class="brand">
+          <div class="brand-mark">Lex <span>Raid</span></div>
+          <div class="brand-sub">C1 · 67 слов · 7 дней кампании</div>
+        </div>
+        <div class="stats">
+          <div class="stat">XP <b id="stat-xp">0</b></div>
+          <div class="stat">Серия <b id="stat-streak">0</b></div>
+          <div class="stat">Рекорд <b id="stat-best">0</b></div>
+          <div class="stat">Мастер <b id="stat-mastered">0/67</b></div>
+        </div>
+      </header>
+
+      <!-- HUB -->
+      <section id="screen-hub" class="screen active">
+        <div class="hero-week">
+          <div class="panel">
+            <h1>Неделя лексикона</h1>
+            <p>
+              Каждый день — пачка новых слов и мини-игры. Закрой босса дня, чтобы открыть следующий.
+              Комбо множит XP, а mastery ★★★ показывает, что слово уже твоё.
+            </p>
+            <div class="week-meter">
+              <div class="meter-label">
+                <span>Прогресс недели</span>
+                <span id="week-pct">0%</span>
+              </div>
+              <div class="meter"><i id="week-bar"></i></div>
+            </div>
+          </div>
+          <div class="panel side-actions">
+            <button class="btn btn-primary" id="btn-continue" type="button">Продолжить день</button>
+            <button class="btn btn-secondary" id="btn-weak" type="button">Добить слабые</button>
+            <button class="btn btn-ghost" id="btn-arsenal" type="button">Арсенал слов</button>
+            <button class="btn btn-danger" id="btn-reset" type="button">Сброс прогресса</button>
+          </div>
+        </div>
+        <div class="days" id="days"></div>
+      </section>
+
+      <!-- DAY LOBBY -->
+      <section id="screen-lobby" class="screen">
+        <div class="lobby-head">
+          <div>
+            <button class="btn btn-ghost" id="back-hub" type="button">← Карта</button>
+            <h1 id="lobby-title" style="font-family: var(--font-display); margin: 0.6rem 0 0.35rem; font-size: 1.8rem">
+              День
+            </h1>
+            <p id="lobby-blurb" style="color: var(--muted); margin: 0; max-width: 40rem"></p>
+          </div>
+        </div>
+
+        <div class="modes">
+          <button class="mode-card" type="button" data-mode="duel">
+            <span class="icon">01</span>
+            <h3>Дуэль</h3>
+            <p>Значение → выбери слово. Классика, чтобы въехать.</p>
+          </button>
+          <button class="mode-card" type="button" data-mode="recall">
+            <span class="icon">02</span>
+            <h3>Обратный вызов</h3>
+            <p>Слово → выбери значение. Проверка, что помнишь смысл.</p>
+          </button>
+          <button class="mode-card" type="button" data-mode="match">
+            <span class="icon">03</span>
+            <h3>Пары</h3>
+            <p>Собери соответствия слово ↔ значение.</p>
+          </button>
+          <button class="mode-card" type="button" data-mode="spell">
+            <span class="icon">04</span>
+            <h3>Напиши слово</h3>
+            <p>Печатай по значению. Жёстко, но слова врезаются.</p>
+          </button>
+          <button class="mode-card" type="button" data-mode="blitz">
+            <span class="icon">05</span>
+            <h3>Блиц</h3>
+            <p>Микс раундов на скорость. 5 жизней — не зевай.</p>
+          </button>
+          <button class="mode-card boss" type="button" data-mode="boss">
+            <span class="icon">BOSS</span>
+            <h3>Босс дня</h3>
+            <p>≥70% верных и хотя бы 1 жизнь — день пройден, следующий открыт.</p>
+          </button>
+        </div>
+
+        <div class="panel">
+          <h2 style="font-size: 1.1rem; margin-bottom: 0.75rem">Слова дня</h2>
+          <div class="word-strip" id="word-strip"></div>
+        </div>
+      </section>
+
+      <!-- PLAY -->
+      <section id="screen-play" class="screen">
+        <div class="play-shell">
+          <div class="play-hud">
+            <div class="hud-left">
+              <div class="stat" id="play-mode-label">Режим</div>
+              <div class="lives hidden" id="lives"></div>
+            </div>
+            <div class="hud-right">
+              <div class="stat">Счёт <b id="play-score">0/0</b></div>
+              <div class="stat">Комбо <b id="play-combo">—</b></div>
+            </div>
+          </div>
+          <div class="progress-track"><i id="play-progress"></i></div>
+          <div class="play-card" id="play-card"></div>
+        </div>
+      </section>
+
+      <!-- ARSENAL -->
+      <section id="screen-arsenal" class="screen">
+        <div class="lobby-head">
+          <div>
+            <button class="btn btn-ghost" id="back-hub-2" type="button">← Карта</button>
+            <h1 style="font-family: var(--font-display); margin: 0.6rem 0 0.35rem; font-size: 1.8rem">
+              Арсенал
+            </h1>
+            <p style="color: var(--muted); margin: 0">Все 67 слов и их mastery.</p>
+          </div>
+          <select
+            id="arsenal-filter"
+            style="
+              padding: 0.7rem 1rem;
+              border-radius: 12px;
+              border: 1px solid var(--line);
+              background: var(--panel);
+              color: var(--text);
+            "
+          >
+            <option value="all">Все</option>
+            <option value="weak">Слабые (&lt;★★)</option>
+            <option value="new">Новые</option>
+            <option value="mastered">Мастер ★★★</option>
+          </select>
+        </div>
+        <div class="arsenal-grid" id="arsenal-grid"></div>
+      </section>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script src="js/words.js"></script>
+    <script src="js/game.js"></script>
+  </body>
+</html>
