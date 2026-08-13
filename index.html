@@ -27,7 +27,7 @@
           <div class="panel">
             <h1>Кампания лексикона</h1>
             <p>
-              Четыре дня: первый лёгкий, дальше плотнее. Можно заходить в любой день.
+              Четыре дня по пачкам — или сразу все 67 слов в одном наборе.
               Комбо множит XP, а mastery ★★★ показывает, что слово уже твоё.
             </p>
             <div class="week-meter">
@@ -39,7 +39,8 @@
             </div>
           </div>
           <div class="panel side-actions">
-            <button class="btn btn-primary" id="btn-continue" type="button">Продолжить день</button>
+            <button class="btn btn-primary" id="btn-all-words" type="button">Все 67 слов</button>
+            <button class="btn btn-secondary" id="btn-continue" type="button">Продолжить день</button>
             <button class="btn btn-secondary" id="btn-weak" type="button">Добить слабые</button>
             <button class="btn btn-ghost" id="btn-arsenal" type="button">Арсенал слов</button>
             <button class="btn btn-danger" id="btn-reset" type="button">Сброс прогресса</button>
@@ -157,21 +158,24 @@
             </h1>
             <p style="color: var(--muted); margin: 0">Все 67 слов и их mastery.</p>
           </div>
-          <select
-            id="arsenal-filter"
-            style="
-              padding: 0.7rem 1rem;
-              border-radius: 12px;
-              border: 1px solid var(--line);
-              background: var(--panel);
-              color: var(--text);
-            "
-          >
-            <option value="all">Все</option>
-            <option value="weak">Слабые (&lt;★★)</option>
-            <option value="new">Новые</option>
-            <option value="mastered">Мастер ★★★</option>
-          </select>
+          <div class="study-actions" style="margin: 0">
+            <button class="btn btn-primary" id="btn-arsenal-write" type="button">Вписать все</button>
+            <select
+              id="arsenal-filter"
+              style="
+                padding: 0.7rem 1rem;
+                border-radius: 12px;
+                border: 1px solid var(--line);
+                background: var(--panel);
+                color: var(--text);
+              "
+            >
+              <option value="all">Все</option>
+              <option value="weak">Слабые (&lt;★★)</option>
+              <option value="new">Новые</option>
+              <option value="mastered">Мастер ★★★</option>
+            </select>
+          </div>
         </div>
         <div class="arsenal-grid" id="arsenal-grid"></div>
       </section>

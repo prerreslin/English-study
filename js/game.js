@@ -57,6 +57,7 @@
 
   let state = load();
   let currentDay = 0;
+  let studyScope = "day";
   let session = null;
 
   const screens = {
@@ -136,12 +137,7 @@
     openStudy(dayIndex);
   }
 
-  function openStudy(dayIndex) {
-    currentDay = dayIndex;
-    const words = dayWords(dayIndex);
-    $("#study-title").textContent = `День ${dayIndex + 1}: слова`;
-    $("#study-blurb").textContent =
-      `${DAY_BLURBS[dayIndex]} Сначала выучи значения — потом набери слова сам и пройди тест.`;
+  function fillStudyList(words) {
     const list = $("#study-list");
     list.innerHTML = "";
     words.forEach((w, i) => {
@@ -153,10 +149,31 @@
         <div class="study-body">
           <div class="study-word">${escapeHtml(w.word)}</div>
           <div class="study-meaning">${escapeHtml(w.meaning)}</div>
-          <div class="study-meta">${masteryStars(m)}</div>
+          <div class="study-meta">${masteryStars(m)} · день ${dayOfWord(w.id)}</div>
         </div>`;
       list.appendChild(item);
     });
+  }
+
+  function openStudy(dayIndex) {
+    studyScope = "day";
+    currentDay = dayIndex;
+    const words = dayWords(dayIndex);
+    $("#study-title").textContent = `День ${dayIndex + 1}: слова`;
+    $("#study-blurb").textContent =
+      `${DAY_BLURBS[dayIndex]} Сначала выучи значения — потом набери слова сам и пройди тест.`;
+    $("#btn-to-test").classList.remove("hidden");
+    fillStudyList(words);
+    showScreen("study");
+  }
+
+  function openAllStudy() {
+    studyScope = "all";
+    $("#study-title").textContent = "Все 67 слов";
+    $("#study-blurb").textContent =
+      "Все слова кампании в одном месте. Просмотри значения, потом впиши каждое сам.";
+    $("#btn-to-test").classList.add("hidden");
+    fillStudyList(VOCAB);
     showScreen("study");
   }
 
@@ -201,8 +218,12 @@
   }
 
   /* —— Session runners —— */
-  function startMode(mode) {
-    const words = dayWords(currentDay);
+  function practiceWords() {
+    return studyScope === "all" ? VOCAB : dayWords(currentDay);
+  }
+
+  function startMode(mode, wordList) {
+    const words = wordList || practiceWords();
     state.plays += 1;
     save();
 
@@ -474,19 +495,23 @@
         <div class="result-actions">
           <button class="btn btn-primary" id="again" type="button">Ещё раз</button>
           ${
-            s.mode === "write"
-              ? `<button class="btn btn-secondary" id="to-test" type="button">К тесту</button>`
-              : `<button class="btn btn-secondary" id="to-lobby" type="button">К режимам дня</button>`
+            s.mode === "write" && studyScope === "all"
+              ? `<button class="btn btn-secondary" id="to-list" type="button">К списку слов</button>`
+              : s.mode === "write"
+                ? `<button class="btn btn-secondary" id="to-test" type="button">К тесту</button>`
+                : `<button class="btn btn-secondary" id="to-lobby" type="button">К режимам дня</button>`
           }
           <button class="btn btn-ghost" id="to-hub" type="button">Карта кампании</button>
         </div>
       </div>`;
 
-    $("#again").onclick = () => startMode(s.mode);
+    $("#again").onclick = () => startMode(s.mode, s.words);
     const toLobby = $("#to-lobby");
     if (toLobby) toLobby.onclick = () => openLobby(currentDay);
     const toTest = $("#to-test");
     if (toTest) toTest.onclick = () => openLobby(currentDay);
+    const toList = $("#to-list");
+    if (toList) toList.onclick = () => openAllStudy();
     $("#to-hub").onclick = () => renderHub();
     updateTopStats();
   }
@@ -676,6 +701,11 @@
   /* —— Wire UI —— */
   $("#btn-arsenal").addEventListener("click", renderArsenal);
   $("#btn-weak").addEventListener("click", startWeakDrill);
+  $("#btn-all-words").addEventListener("click", openAllStudy);
+  $("#btn-arsenal-write").addEventListener("click", () => {
+    studyScope = "all";
+    startMode("write", VOCAB);
+  });
   $("#btn-reset").addEventListener("click", () => {
     if (confirm("Сбросить весь прогресс?")) {
       state = defaultState();
