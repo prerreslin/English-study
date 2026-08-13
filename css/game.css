@@ -569,6 +569,12 @@ button {
   min-height: 1.4em;
 }
 
+.spell-mask.hard {
+  letter-spacing: 0.02em;
+  font-size: clamp(1.05rem, 3vw, 1.35rem);
+  color: var(--sand-dim);
+}
+
 .spell-tools {
   display: flex;
   flex-wrap: wrap;
