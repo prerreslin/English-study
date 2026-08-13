@@ -61,6 +61,7 @@
 
   const screens = {
     hub: $("#screen-hub"),
+    study: $("#screen-study"),
     lobby: $("#screen-lobby"),
     play: $("#screen-play"),
     arsenal: $("#screen-arsenal"),
@@ -108,12 +109,11 @@
     const root = $("#days");
     root.innerHTML = "";
     for (let i = 0; i < TOTAL_DAYS; i++) {
-      const unlocked = i <= state.unlockedDay;
       const cleared = !!state.cleared[i];
       const avg = dayMasteryAvg(i);
       const stars = Math.round(avg * 3);
       const card = document.createElement("button");
-      card.className = `day-card ${unlocked ? "unlocked" : "locked"} ${cleared ? "cleared" : ""}`;
+      card.className = `day-card unlocked ${cleared ? "cleared" : ""}`;
       card.type = "button";
       card.innerHTML = `
         <div class="day-num">День ${i + 1}</div>
@@ -121,24 +121,49 @@
         <div class="blurb">${DAY_BLURBS[i]}</div>
         <div class="day-foot">
           <span class="stars">${masteryStars(stars)}</span>
-          <span class="badge ${cleared ? "ok" : unlocked ? "" : "lock"}">
-            ${cleared ? "Пройден" : unlocked ? `${DAY_SIZES[i]} слов` : "Закрыто"}
+          <span class="badge ${cleared ? "ok" : ""}">
+            ${cleared ? "Пройден" : `${DAY_SIZES[i]} слов`}
           </span>
         </div>`;
-      if (unlocked) {
-        card.addEventListener("click", () => openLobby(i));
-      } else {
-        card.addEventListener("click", () => toast("Сначала пройди босса предыдущего дня"));
-      }
+      card.addEventListener("click", () => openDay(i));
       root.appendChild(card);
     }
     showScreen("hub");
   }
 
+  function openDay(dayIndex) {
+    currentDay = dayIndex;
+    openStudy(dayIndex);
+  }
+
+  function openStudy(dayIndex) {
+    currentDay = dayIndex;
+    const words = dayWords(dayIndex);
+    $("#study-title").textContent = `День ${dayIndex + 1}: слова`;
+    $("#study-blurb").textContent =
+      `${DAY_BLURBS[dayIndex]} Сначала выучи значения — потом набери слова сам и пройди тест.`;
+    const list = $("#study-list");
+    list.innerHTML = "";
+    words.forEach((w, i) => {
+      const m = state.mastery[w.id] || 0;
+      const item = document.createElement("article");
+      item.className = "study-card";
+      item.innerHTML = `
+        <div class="study-num">${String(i + 1).padStart(2, "0")}</div>
+        <div class="study-body">
+          <div class="study-word">${escapeHtml(w.word)}</div>
+          <div class="study-meaning">${escapeHtml(w.meaning)}</div>
+          <div class="study-meta">${masteryStars(m)}</div>
+        </div>`;
+      list.appendChild(item);
+    });
+    showScreen("study");
+  }
+
   function openLobby(dayIndex) {
     currentDay = dayIndex;
     const words = dayWords(dayIndex);
-    $("#lobby-title").textContent = `День ${dayIndex + 1}: ${DAY_TITLES[dayIndex]}`;
+    $("#lobby-title").textContent = `День ${dayIndex + 1}: тест`;
     $("#lobby-blurb").textContent = DAY_BLURBS[dayIndex];
     const strip = $("#word-strip");
     strip.innerHTML = "";
@@ -208,8 +233,8 @@
     if (mode === "recall") {
       return shuffle(words).map((w) => ({ type: "word-to-meaning", word: w }));
     }
-    if (mode === "spell") {
-      return shuffle(words).map((w) => ({ type: "spell", word: w }));
+    if (mode === "spell" || mode === "write") {
+      return shuffle(words).map((w) => ({ type: "spell", word: w, revealed: 0 }));
     }
     if (mode === "blitz") {
       const pool = [];
@@ -223,7 +248,7 @@
       const duel = shuffle(words).map((w) => ({ type: "meaning-to-word", word: w }));
       const spell = shuffle(words)
         .slice(0, Math.min(4, words.length))
-        .map((w) => ({ type: "spell", word: w }));
+        .map((w) => ({ type: "spell", word: w, revealed: 1 }));
       const recall = shuffle(words)
         .slice(0, Math.min(4, words.length))
         .map((w) => ({ type: "word-to-meaning", word: w }));
@@ -260,11 +285,61 @@
         duel: "Дуэль значений",
         recall: "Обратный вызов",
         spell: "Напиши слово",
+        write: "Набор",
         blitz: "Блиц",
         boss: "Босс дня",
         match: "Пары",
       }[mode] || mode
     );
+  }
+
+  function spellMask(word, revealed) {
+    return [...word]
+      .map((ch, i) => (i < revealed ? ch : "·"))
+      .join(" ");
+  }
+
+  function renderSpellRound(round) {
+    const s = session;
+    const word = round.word.word;
+    const revealed = round.revealed || 0;
+    const card = $("#play-card");
+    card.innerHTML = `<div class="prompt-label">${s.mode === "write" ? "Впиши слово по значению" : "Напиши слово по значению"}</div>
+      <p class="prompt">${escapeHtml(round.word.meaning)}</p>
+      <div class="spell-mask" id="spell-mask">${escapeHtml(spellMask(word, revealed))}</div>
+      <div class="spell-row">
+        <input id="spell-input" autocomplete="off" autocorrect="off" spellcheck="false" autocapitalize="off" placeholder="type the word…" />
+        <button class="btn btn-primary" id="spell-submit" type="button">OK</button>
+      </div>
+      <div class="spell-tools">
+        <button class="btn btn-secondary" id="spell-hint" type="button" ${revealed >= word.length ? "disabled" : ""}>
+          Открыть след. букву
+        </button>
+        <span class="spell-meta">${word.length} букв · открыто ${revealed}/${word.length}</span>
+      </div>
+      <div id="spell-reveal" class="spell-reveal hidden"></div>`;
+
+    const input = $("#spell-input");
+    const submit = () => {
+      if (s.answered) return;
+      const ok = input.value.trim().toLowerCase() === word.toLowerCase();
+      judge(ok, round.word.id, word);
+    };
+    $("#spell-submit").addEventListener("click", submit);
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") submit();
+    });
+    $("#spell-hint").addEventListener("click", () => {
+      if (s.answered) return;
+      if (round.revealed >= word.length) return;
+      round.revealed += 1;
+      $("#spell-mask").textContent = spellMask(word, round.revealed);
+      $("#spell-hint").disabled = round.revealed >= word.length;
+      const meta = card.querySelector(".spell-meta");
+      if (meta) meta.textContent = `${word.length} букв · открыто ${round.revealed}/${word.length}`;
+      input.focus();
+    });
+    setTimeout(() => input.focus(), 50);
   }
 
   function renderRound() {
@@ -295,23 +370,8 @@
       const opts = shuffle([round.word.meaning, ...distractors]);
       mountChoices(opts, round.word.meaning, round.word.id);
     } else if (round.type === "spell") {
-      card.innerHTML = `<div class="prompt-label">Напиши слово по значению</div>
-        <p class="prompt">${escapeHtml(round.word.meaning)}</p>
-        <div class="spell-row">
-          <input id="spell-input" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="type the word…" />
-          <button class="btn btn-primary" id="spell-submit" type="button">OK</button>
-        </div>
-        <p style="margin:0.9rem 0 0;color:var(--muted);font-size:0.85rem">Подсказка: ${round.word.word.length} букв, начинается на «${round.word.word[0]}»</p>`;
-      const input = $("#spell-input");
-      const submit = () => {
-        if (s.answered) return;
-        judge(input.value.trim().toLowerCase() === round.word.word.toLowerCase(), round.word.id, round.word.word);
-      };
-      $("#spell-submit").addEventListener("click", submit);
-      input.addEventListener("keydown", (e) => {
-        if (e.key === "Enter") submit();
-      });
-      setTimeout(() => input.focus(), 50);
+      if (round.revealed == null) round.revealed = s.mode === "write" ? 0 : 1;
+      renderSpellRound(round);
     }
   }
 
@@ -350,8 +410,22 @@
     } else {
       onWrong(wordId);
       session.lives -= 1;
-      fb.textContent = reveal ? `✗  ${reveal}` : "✗";
+      fb.innerHTML = reveal
+        ? `Неверно<br><span class="answer-correct">Правильно: <b>${escapeHtml(reveal)}</b></span>`
+        : "✗";
       card.classList.add("wrong");
+      const revealBox = $("#spell-reveal");
+      if (revealBox && reveal) {
+        revealBox.classList.remove("hidden");
+        revealBox.innerHTML = `Правильное слово: <strong>${escapeHtml(reveal)}</strong>`;
+      }
+      const hintBtn = $("#spell-hint");
+      if (hintBtn) hintBtn.disabled = true;
+      const input = $("#spell-input");
+      if (input) {
+        input.disabled = true;
+        input.value = reveal;
+      }
       updateTopStats();
     }
     card.appendChild(fb);
@@ -361,7 +435,7 @@
     setTimeout(() => {
       session.index += 1;
       renderRound();
-    }, ok ? 650 : 1100);
+    }, ok ? 650 : 1800);
   }
 
   function endSession() {
@@ -373,12 +447,8 @@
 
     if (passedBoss) {
       state.cleared[currentDay] = true;
-      if (currentDay === state.unlockedDay && currentDay < LAST_DAY) {
-        state.unlockedDay = currentDay + 1;
-        toast(`День ${currentDay + 2} открыт!`);
-      } else if (currentDay === LAST_DAY) {
-        toast("Кампания пройдена. Ты легенда лексикона.");
-      }
+      const allCleared = [...Array(TOTAL_DAYS).keys()].every((i) => state.cleared[i]);
+      toast(allCleared ? "Кампания пройдена. Ты легенда лексикона." : `День ${currentDay + 1} пройден!`);
       state.xp += 50;
       save();
     }
@@ -403,13 +473,20 @@
     }</p>
         <div class="result-actions">
           <button class="btn btn-primary" id="again" type="button">Ещё раз</button>
-          <button class="btn btn-secondary" id="to-lobby" type="button">К режимам дня</button>
+          ${
+            s.mode === "write"
+              ? `<button class="btn btn-secondary" id="to-test" type="button">К тесту</button>`
+              : `<button class="btn btn-secondary" id="to-lobby" type="button">К режимам дня</button>`
+          }
           <button class="btn btn-ghost" id="to-hub" type="button">Карта кампании</button>
         </div>
       </div>`;
 
     $("#again").onclick = () => startMode(s.mode);
-    $("#to-lobby").onclick = () => openLobby(currentDay);
+    const toLobby = $("#to-lobby");
+    if (toLobby) toLobby.onclick = () => openLobby(currentDay);
+    const toTest = $("#to-test");
+    if (toTest) toTest.onclick = () => openLobby(currentDay);
     $("#to-hub").onclick = () => renderHub();
     updateTopStats();
   }
@@ -609,6 +686,11 @@
   });
   $("#back-hub").addEventListener("click", renderHub);
   $("#back-hub-2").addEventListener("click", renderHub);
+  $("#back-hub-study").addEventListener("click", renderHub);
+  $("#btn-start-write").addEventListener("click", () => startMode("write"));
+  $("#btn-to-test").addEventListener("click", () => openLobby(currentDay));
+  $("#btn-lobby-study").addEventListener("click", () => openStudy(currentDay));
+  $("#btn-lobby-write").addEventListener("click", () => startMode("write"));
   $("#arsenal-filter").addEventListener("change", renderArsenal);
 
   $$("[data-mode]").forEach((btn) => {
@@ -616,7 +698,8 @@
   });
 
   $("#btn-continue").addEventListener("click", () => {
-    openLobby(state.unlockedDay);
+    const next = [...Array(TOTAL_DAYS).keys()].find((i) => !state.cleared[i]);
+    openDay(next ?? LAST_DAY);
   });
 
   renderHub();

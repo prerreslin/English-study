@@ -504,6 +504,111 @@ button {
   background: rgba(110, 201, 176, 0.12);
 }
 
+.lobby-path {
+  margin-bottom: 1.1rem;
+}
+
+.study-list {
+  display: grid;
+  gap: 0.7rem;
+  margin-bottom: 1.25rem;
+}
+
+.study-card {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.9rem;
+  align-items: start;
+  padding: 1rem 1.1rem;
+  border-radius: var(--radius);
+  background: var(--panel);
+  border: 1px solid var(--line);
+}
+
+.study-num {
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  letter-spacing: 0.1em;
+  color: var(--foam);
+  font-weight: 700;
+  padding-top: 0.2rem;
+}
+
+.study-word {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  letter-spacing: -0.02em;
+  margin-bottom: 0.25rem;
+}
+
+.study-meaning {
+  color: var(--muted);
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+.study-meta {
+  margin-top: 0.45rem;
+  color: var(--sand-dim);
+  font-size: 0.8rem;
+}
+
+.study-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin-bottom: 1rem;
+}
+
+.spell-mask {
+  font-family: var(--font-display);
+  font-size: clamp(1.35rem, 4vw, 1.9rem);
+  letter-spacing: 0.18em;
+  color: var(--sand);
+  margin: -0.35rem 0 1rem;
+  min-height: 1.4em;
+}
+
+.spell-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.9rem;
+}
+
+.spell-meta {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.spell-reveal {
+  margin-top: 1rem;
+  padding: 0.85rem 1rem;
+  border-radius: 12px;
+  border: 1px solid rgba(224, 107, 107, 0.35);
+  background: rgba(224, 107, 107, 0.12);
+  color: #f5c0c0;
+  font-size: 0.95rem;
+}
+
+.spell-reveal strong {
+  color: var(--sand);
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+}
+
+.answer-correct {
+  display: inline-block;
+  margin-top: 0.25rem;
+  font-size: 0.92rem;
+  font-weight: 500;
+}
+
+.answer-correct b {
+  color: var(--sand);
+}
+
 /* —— Play —— */
 .play-shell {
   max-width: 720px;

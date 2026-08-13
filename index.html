@@ -27,7 +27,7 @@
           <div class="panel">
             <h1>Кампания лексикона</h1>
             <p>
-              Четыре дня: первый лёгкий, дальше плотнее. Закрой босса дня, чтобы открыть следующий.
+              Четыре дня: первый лёгкий, дальше плотнее. Можно заходить в любой день.
               Комбо множит XP, а mastery ★★★ показывает, что слово уже твоё.
             </p>
             <div class="week-meter">
@@ -48,7 +48,27 @@
         <div class="days" id="days"></div>
       </section>
 
-      <!-- DAY LOBBY -->
+      <!-- STUDY -->
+      <section id="screen-study" class="screen">
+        <div class="lobby-head">
+          <div>
+            <button class="btn btn-ghost" id="back-hub-study" type="button">← Карта</button>
+            <h1 id="study-title" style="font-family: var(--font-display); margin: 0.6rem 0 0.35rem; font-size: 1.8rem">
+              Изучение
+            </h1>
+            <p id="study-blurb" style="color: var(--muted); margin: 0; max-width: 40rem">
+              Сначала просмотри слова дня и их значения — потом набор и тест.
+            </p>
+          </div>
+        </div>
+        <div class="study-list" id="study-list"></div>
+        <div class="study-actions">
+          <button class="btn btn-primary" id="btn-start-write" type="button">Начать набор</button>
+          <button class="btn btn-secondary" id="btn-to-test" type="button">К тесту</button>
+        </div>
+      </section>
+
+      <!-- DAY LOBBY / TEST -->
       <section id="screen-lobby" class="screen">
         <div class="lobby-head">
           <div>
@@ -60,26 +80,36 @@
           </div>
         </div>
 
+        <div class="panel lobby-path">
+          <p style="margin: 0 0 0.85rem; color: var(--muted)">
+            Сначала изучи слова, потом набери их сам, затем пройди тест / босса.
+          </p>
+          <div class="study-actions" style="margin: 0">
+            <button class="btn btn-secondary" id="btn-lobby-study" type="button">Слова дня</button>
+            <button class="btn btn-primary" id="btn-lobby-write" type="button">Набор</button>
+          </div>
+        </div>
+
         <div class="modes">
-          <button class="mode-card" type="button" data-mode="duel">
+          <button class="mode-card" type="button" data-mode="write">
             <span class="icon">01</span>
+            <h3>Набор</h3>
+            <p>Впиши слово сам. Можно открывать следующую букву. Ошибка — покажем правильный ответ.</p>
+          </button>
+          <button class="mode-card" type="button" data-mode="duel">
+            <span class="icon">02</span>
             <h3>Дуэль</h3>
             <p>Значение → выбери слово. Классика, чтобы въехать.</p>
           </button>
           <button class="mode-card" type="button" data-mode="recall">
-            <span class="icon">02</span>
+            <span class="icon">03</span>
             <h3>Обратный вызов</h3>
             <p>Слово → выбери значение. Проверка, что помнишь смысл.</p>
           </button>
           <button class="mode-card" type="button" data-mode="match">
-            <span class="icon">03</span>
+            <span class="icon">04</span>
             <h3>Пары</h3>
             <p>Собери соответствия слово ↔ значение.</p>
-          </button>
-          <button class="mode-card" type="button" data-mode="spell">
-            <span class="icon">04</span>
-            <h3>Напиши слово</h3>
-            <p>Печатай по значению. Жёстко, но слова врезаются.</p>
           </button>
           <button class="mode-card" type="button" data-mode="blitz">
             <span class="icon">05</span>
@@ -89,7 +119,7 @@
           <button class="mode-card boss" type="button" data-mode="boss">
             <span class="icon">BOSS</span>
             <h3>Босс дня</h3>
-            <p>≥70% верных и хотя бы 1 жизнь — день пройден, следующий открыт.</p>
+            <p>≥70% верных и хотя бы 1 жизнь — день засчитан как пройденный.</p>
           </button>
         </div>
 
