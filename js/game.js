@@ -57,6 +57,7 @@
 
   let state = load();
   let currentDay = 0;
+  let studyScope = "day";
   let session = null;
 
   const screens = {
@@ -136,12 +137,7 @@
     openStudy(dayIndex);
   }
 
-  function openStudy(dayIndex) {
-    currentDay = dayIndex;
-    const words = dayWords(dayIndex);
-    $("#study-title").textContent = `День ${dayIndex + 1}: слова`;
-    $("#study-blurb").textContent =
-      `${DAY_BLURBS[dayIndex]} Сначала выучи значения — потом набери слова сам и пройди тест.`;
+  function fillStudyList(words) {
     const list = $("#study-list");
     list.innerHTML = "";
     words.forEach((w, i) => {
@@ -153,10 +149,33 @@
         <div class="study-body">
           <div class="study-word">${escapeHtml(w.word)}</div>
           <div class="study-meaning">${escapeHtml(w.meaning)}</div>
-          <div class="study-meta">${masteryStars(m)}</div>
+          <div class="study-meta">${masteryStars(m)} · день ${dayOfWord(w.id)}</div>
         </div>`;
       list.appendChild(item);
     });
+  }
+
+  function openStudy(dayIndex) {
+    studyScope = "day";
+    currentDay = dayIndex;
+    const words = dayWords(dayIndex);
+    $("#study-title").textContent = `День ${dayIndex + 1}: слова`;
+    $("#study-blurb").textContent =
+      `${DAY_BLURBS[dayIndex]} Сначала выучи значения — потом набери слова сам и пройди тест.`;
+    $("#btn-to-test").classList.remove("hidden");
+    $("#btn-start-write-hard").classList.add("hidden");
+    fillStudyList(words);
+    showScreen("study");
+  }
+
+  function openAllStudy() {
+    studyScope = "all";
+    $("#study-title").textContent = "Все 67 слов";
+    $("#study-blurb").textContent =
+      "Все слова в одном месте. Обычный набор показывает длину, тяжёлый — нет, только подсказки по буквам.";
+    $("#btn-to-test").classList.add("hidden");
+    $("#btn-start-write-hard").classList.remove("hidden");
+    fillStudyList(VOCAB);
     showScreen("study");
   }
 
@@ -201,8 +220,12 @@
   }
 
   /* —— Session runners —— */
-  function startMode(mode) {
-    const words = dayWords(currentDay);
+  function practiceWords() {
+    return studyScope === "all" ? VOCAB : dayWords(currentDay);
+  }
+
+  function startMode(mode, wordList) {
+    const words = wordList || practiceWords();
     state.plays += 1;
     save();
 
@@ -233,7 +256,7 @@
     if (mode === "recall") {
       return shuffle(words).map((w) => ({ type: "word-to-meaning", word: w }));
     }
-    if (mode === "spell" || mode === "write") {
+    if (mode === "spell" || mode === "write" || mode === "write-hard") {
       return shuffle(words).map((w) => ({ type: "spell", word: w, revealed: 0 }));
     }
     if (mode === "blitz") {
@@ -286,11 +309,16 @@
         recall: "Обратный вызов",
         spell: "Напиши слово",
         write: "Набор",
+        "write-hard": "Тяжёлый набор",
         blitz: "Блиц",
         boss: "Босс дня",
         match: "Пары",
       }[mode] || mode
     );
+  }
+
+  function isWriteMode(mode) {
+    return mode === "write" || mode === "write-hard";
   }
 
   function spellMask(word, revealed) {
@@ -299,23 +327,39 @@
       .join(" ");
   }
 
+  function hardHintText(word, revealed) {
+    if (!revealed) return "Длину не показываем — бери подсказку, если застрял.";
+    return `Подсказка: ${word.slice(0, revealed)}`;
+  }
+
   function renderSpellRound(round) {
     const s = session;
     const word = round.word.word;
     const revealed = round.revealed || 0;
+    const hard = s.mode === "write-hard";
     const card = $("#play-card");
-    card.innerHTML = `<div class="prompt-label">${s.mode === "write" ? "Впиши слово по значению" : "Напиши слово по значению"}</div>
+    const mask = hard ? hardHintText(word, revealed) : spellMask(word, revealed);
+    const meta = hard
+      ? revealed
+        ? `подсказок: ${revealed}`
+        : "длина скрыта"
+      : `${word.length} букв · открыто ${revealed}/${word.length}`;
+    card.innerHTML = `<div class="prompt-label">${
+      hard ? "Впиши слово — без длины" : s.mode === "write" ? "Впиши слово по значению" : "Напиши слово по значению"
+    }</div>
       <p class="prompt">${escapeHtml(round.word.meaning)}</p>
-      <div class="spell-mask" id="spell-mask">${escapeHtml(spellMask(word, revealed))}</div>
+      <div class="spell-mask${hard ? " hard" : ""}" id="spell-mask">${escapeHtml(mask)}</div>
       <div class="spell-row">
-        <input id="spell-input" autocomplete="off" autocorrect="off" spellcheck="false" autocapitalize="off" placeholder="type the word…" />
+        <input id="spell-input" autocomplete="off" autocorrect="off" spellcheck="false" autocapitalize="off" placeholder="${
+          hard ? "пиши слово…" : "type the word…"
+        }" />
         <button class="btn btn-primary" id="spell-submit" type="button">OK</button>
       </div>
       <div class="spell-tools">
         <button class="btn btn-secondary" id="spell-hint" type="button" ${revealed >= word.length ? "disabled" : ""}>
-          Открыть след. букву
+          ${hard ? "Подсказка: след. буква" : "Открыть след. букву"}
         </button>
-        <span class="spell-meta">${word.length} букв · открыто ${revealed}/${word.length}</span>
+        <span class="spell-meta">${meta}</span>
       </div>
       <div id="spell-reveal" class="spell-reveal hidden"></div>`;
 
@@ -333,10 +377,16 @@
       if (s.answered) return;
       if (round.revealed >= word.length) return;
       round.revealed += 1;
-      $("#spell-mask").textContent = spellMask(word, round.revealed);
+      $("#spell-mask").textContent = hard
+        ? hardHintText(word, round.revealed)
+        : spellMask(word, round.revealed);
       $("#spell-hint").disabled = round.revealed >= word.length;
-      const meta = card.querySelector(".spell-meta");
-      if (meta) meta.textContent = `${word.length} букв · открыто ${round.revealed}/${word.length}`;
+      const metaEl = card.querySelector(".spell-meta");
+      if (metaEl) {
+        metaEl.textContent = hard
+          ? `подсказок: ${round.revealed}`
+          : `${word.length} букв · открыто ${round.revealed}/${word.length}`;
+      }
       input.focus();
     });
     setTimeout(() => input.focus(), 50);
@@ -370,7 +420,7 @@
       const opts = shuffle([round.word.meaning, ...distractors]);
       mountChoices(opts, round.word.meaning, round.word.id);
     } else if (round.type === "spell") {
-      if (round.revealed == null) round.revealed = s.mode === "write" ? 0 : 1;
+      if (round.revealed == null) round.revealed = isWriteMode(s.mode) ? 0 : 1;
       renderSpellRound(round);
     }
   }
@@ -404,7 +454,10 @@
 
     if (ok) {
       session.correct += 1;
-      const { gained, streak } = onCorrect(wordId, session.mode === "boss" ? 20 : 12);
+      const { gained, streak } = onCorrect(
+        wordId,
+        session.mode === "boss" ? 20 : session.mode === "write-hard" ? 16 : 12
+      );
       fb.textContent = streak > 1 ? `+${gained}  combo ${streak}` : `+${gained}`;
       card.classList.add("right");
     } else {
@@ -474,19 +527,23 @@
         <div class="result-actions">
           <button class="btn btn-primary" id="again" type="button">Ещё раз</button>
           ${
-            s.mode === "write"
-              ? `<button class="btn btn-secondary" id="to-test" type="button">К тесту</button>`
-              : `<button class="btn btn-secondary" id="to-lobby" type="button">К режимам дня</button>`
+            isWriteMode(s.mode) && studyScope === "all"
+              ? `<button class="btn btn-secondary" id="to-list" type="button">К списку слов</button>`
+              : isWriteMode(s.mode)
+                ? `<button class="btn btn-secondary" id="to-test" type="button">К тесту</button>`
+                : `<button class="btn btn-secondary" id="to-lobby" type="button">К режимам дня</button>`
           }
           <button class="btn btn-ghost" id="to-hub" type="button">Карта кампании</button>
         </div>
       </div>`;
 
-    $("#again").onclick = () => startMode(s.mode);
+    $("#again").onclick = () => startMode(s.mode, s.words);
     const toLobby = $("#to-lobby");
     if (toLobby) toLobby.onclick = () => openLobby(currentDay);
     const toTest = $("#to-test");
     if (toTest) toTest.onclick = () => openLobby(currentDay);
+    const toList = $("#to-list");
+    if (toList) toList.onclick = () => openAllStudy();
     $("#to-hub").onclick = () => renderHub();
     updateTopStats();
   }
@@ -676,6 +733,15 @@
   /* —— Wire UI —— */
   $("#btn-arsenal").addEventListener("click", renderArsenal);
   $("#btn-weak").addEventListener("click", startWeakDrill);
+  $("#btn-all-words").addEventListener("click", openAllStudy);
+  $("#btn-arsenal-write").addEventListener("click", () => {
+    studyScope = "all";
+    startMode("write", VOCAB);
+  });
+  $("#btn-arsenal-write-hard").addEventListener("click", () => {
+    studyScope = "all";
+    startMode("write-hard", VOCAB);
+  });
   $("#btn-reset").addEventListener("click", () => {
     if (confirm("Сбросить весь прогресс?")) {
       state = defaultState();
@@ -688,6 +754,7 @@
   $("#back-hub-2").addEventListener("click", renderHub);
   $("#back-hub-study").addEventListener("click", renderHub);
   $("#btn-start-write").addEventListener("click", () => startMode("write"));
+  $("#btn-start-write-hard").addEventListener("click", () => startMode("write-hard", VOCAB));
   $("#btn-to-test").addEventListener("click", () => openLobby(currentDay));
   $("#btn-lobby-study").addEventListener("click", () => openStudy(currentDay));
   $("#btn-lobby-write").addEventListener("click", () => startMode("write"));
