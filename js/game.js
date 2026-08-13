@@ -109,12 +109,11 @@
     const root = $("#days");
     root.innerHTML = "";
     for (let i = 0; i < TOTAL_DAYS; i++) {
-      const unlocked = i <= state.unlockedDay;
       const cleared = !!state.cleared[i];
       const avg = dayMasteryAvg(i);
       const stars = Math.round(avg * 3);
       const card = document.createElement("button");
-      card.className = `day-card ${unlocked ? "unlocked" : "locked"} ${cleared ? "cleared" : ""}`;
+      card.className = `day-card unlocked ${cleared ? "cleared" : ""}`;
       card.type = "button";
       card.innerHTML = `
         <div class="day-num">День ${i + 1}</div>
@@ -122,15 +121,11 @@
         <div class="blurb">${DAY_BLURBS[i]}</div>
         <div class="day-foot">
           <span class="stars">${masteryStars(stars)}</span>
-          <span class="badge ${cleared ? "ok" : unlocked ? "" : "lock"}">
-            ${cleared ? "Пройден" : unlocked ? `${DAY_SIZES[i]} слов` : "Закрыто"}
+          <span class="badge ${cleared ? "ok" : ""}">
+            ${cleared ? "Пройден" : `${DAY_SIZES[i]} слов`}
           </span>
         </div>`;
-      if (unlocked) {
-        card.addEventListener("click", () => openDay(i));
-      } else {
-        card.addEventListener("click", () => toast("Сначала пройди босса предыдущего дня"));
-      }
+      card.addEventListener("click", () => openDay(i));
       root.appendChild(card);
     }
     showScreen("hub");
@@ -452,12 +447,8 @@
 
     if (passedBoss) {
       state.cleared[currentDay] = true;
-      if (currentDay === state.unlockedDay && currentDay < LAST_DAY) {
-        state.unlockedDay = currentDay + 1;
-        toast(`День ${currentDay + 2} открыт!`);
-      } else if (currentDay === LAST_DAY) {
-        toast("Кампания пройдена. Ты легенда лексикона.");
-      }
+      const allCleared = [...Array(TOTAL_DAYS).keys()].every((i) => state.cleared[i]);
+      toast(allCleared ? "Кампания пройдена. Ты легенда лексикона." : `День ${currentDay + 1} пройден!`);
       state.xp += 50;
       save();
     }
@@ -707,7 +698,8 @@
   });
 
   $("#btn-continue").addEventListener("click", () => {
-    openDay(state.unlockedDay);
+    const next = [...Array(TOTAL_DAYS).keys()].find((i) => !state.cleared[i]);
+    openDay(next ?? LAST_DAY);
   });
 
   renderHub();
